@@ -7,6 +7,14 @@ using Movement.API.Models;
 
 namespace Movement.API.Repositories;
 
+/// <summary>
+/// Implements cache-aside (lazy population) across two cache tiers before hitting the database:
+/// <list type="number">
+///   <item>Redis (L1) — distributed, shared across instances</item>
+///   <item>In-process LRU (L2) — fastest path, bounded to a fixed capacity</item>
+///   <item>PostgreSQL — source of truth; result is written back to both caches on a miss</item>
+/// </list>
+/// </summary>
 public class ItemRepository(AppDbContext db, IRedisService redis, CustomCacheService<string, Item> customCacheService) : IItemRepository
 {
     private static readonly DistributedCacheEntryOptions CacheOptions = new()

@@ -3,6 +3,11 @@ using Microsoft.Extensions.Options;
 
 namespace Movement.API.Infrastructure.Cache;
 
+/// <summary>
+/// Singleton Redis wrapper that enforces a per-operation timeout via
+/// <see cref="RedisSettings.TimeoutMs"/> and swallows connectivity errors so that
+/// the calling layer (repository) can transparently fall back to the next cache tier.
+/// </summary>
 public class RedisService(IDistributedCache cache, IOptions<RedisSettings> options, ILogger<RedisService> logger) : IRedisService
 {
     private readonly int _timeoutMs = options.Value.TimeoutMs;

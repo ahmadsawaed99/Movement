@@ -1,5 +1,10 @@
 namespace Movement.API.Infrastructure.CustomCache;
 
+/// <summary>
+/// Thread-safe, capacity-bounded LRU (Least Recently Used) cache backed by a doubly-linked
+/// list and a dictionary for O(1) get, insert, and eviction. Acts as an in-process L2 cache
+/// when the distributed Redis cache is unavailable or has no entry for the requested key.
+/// </summary>
 public sealed class CustomCacheService<TKey, TValue> where TKey : notnull
 {
     private readonly Dictionary<TKey, CustomNode<TKey, TValue>> _map;
