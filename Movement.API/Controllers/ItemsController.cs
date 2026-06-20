@@ -8,10 +8,6 @@ namespace Movement.API.Controllers;
 [Route("api/[controller]")]
 public class ItemsController(IItemRepository repository) : ControllerBase
 {
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Item>>> GetAll() =>
-        Ok(await repository.GetAllAsync());
-
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Item>> GetById(int id)
     {

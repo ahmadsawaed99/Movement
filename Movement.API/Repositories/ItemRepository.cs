@@ -1,16 +1,56 @@
-using Microsoft.EntityFrameworkCore;
-using Movement.API.Data;
+using System.Text.Json;
+using Microsoft.Extensions.Caching.Distributed;
+using Movement.API.Infrastructure.Cache;
+using Movement.API.Infrastructure.CustomCache;
+using Movement.API.Infrastructure.Data;
 using Movement.API.Models;
 
 namespace Movement.API.Repositories;
 
-public class ItemRepository(AppDbContext db) : IItemRepository
+public class ItemRepository(AppDbContext db, IRedisService redis, CustomCacheService<string, Item> customCacheService) : IItemRepository
 {
-    public async Task<IEnumerable<Item>> GetAllAsync() =>
-        await db.Items.ToListAsync();
+    private static readonly DistributedCacheEntryOptions CacheOptions = new()
+    {
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+    };
 
-    public async Task<Item?> GetByIdAsync(int id) =>
-        await db.Items.FindAsync(id);
+    public async Task<Item?> GetByIdAsync(int id)
+    {
+        bool isCached = false, isCustomCached = false;
+        Item? item = null;
+        var key = $"items:{id}";
+        var cached = await redis.GetStringAsync(key);
+        if (cached is not null)
+        {
+            isCached = true;
+            item = JsonSerializer.Deserialize<Item>(cached);
+        }
+        else
+        {
+            var customCached = customCacheService.TryGet(key);
+            if (customCached is not null)
+            {
+                isCustomCached = true;
+                item = customCached;
+            }
+            else
+            {
+                item = await db.Items.FindAsync(id);
+            }
+        }
+
+        if (item is not null && !isCached)
+        {
+            await redis.SetStringAsync(key, JsonSerializer.Serialize(item), CacheOptions);
+
+            if (!isCustomCached)
+            {
+                customCacheService.AddOrUpdate(key, item);
+            }
+        }
+
+        return item;
+    }
 
     public async Task<Item> CreateAsync(Item item)
     {

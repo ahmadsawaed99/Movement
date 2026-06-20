@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Movement.API.Models;
 
-namespace Movement.API.Data;
+namespace Movement.API.Infrastructure.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
